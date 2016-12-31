@@ -5,23 +5,27 @@
 //  Created by 鄭薇 on 2016/12/4.
 //  Copyright © 2016年 LilyCheng. All rights reserved.
 //
-
 import UIKit
 import JSQMessagesViewController
 import MobileCoreServices
 import AVKit
+import Firebase
 import FirebaseDatabase
 import FirebaseStorage
 import FirebaseAuth
-import GoogleMaps
 
 class ChatViewController: JSQMessagesViewController {
     var messages = [JSQMessage]()
-//    var roomRef: FIRDatabaseReference?
-    var roomRef = FIRDatabase.database().reference().child("rooms").child("2244")
-
-    private lazy var messageRef: FIRDatabaseReference = FIRDatabase.database().reference().child("rooms").child("2244").child("message")
-//    private lazy var messageRef: FIRDatabaseReference = self.roomRef!.child("薇的訊息")
+    
+    //********選擇房間參考位址及房號
+    //var targetRoomRef: FIRDatabaseReference?
+    var targetRoomNum = String()
+    let uuid: String =  UIDevice.current.identifierForVendor!.uuidString
+    fileprivate lazy var storageRef: FIRStorageReference = FIRStorage.storage().reference(forURL: "gs://tripgif-b205b.appspot.com")
+    
+    //********抓出訊息的根參考位址
+    //private lazy var messageRef: FIRDatabaseReference = self.targetRoomRef!.child("messages")
+    private lazy var messageRef: FIRDatabaseReference = FIRDatabase.database().reference().child("rooms").child("\(self.targetRoomNum)").child("messages")
     
     var room: Room? {
         didSet {
@@ -31,45 +35,47 @@ class ChatViewController: JSQMessagesViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        print("進來了...我要進的房號是" + self.targetRoomNum)
+        print(messageRef)
+        
         // No avatars
         collectionView!.collectionViewLayout.incomingAvatarViewSize = CGSize.zero
         collectionView!.collectionViewLayout.outgoingAvatarViewSize = CGSize.zero
-        
-        if let currentUser = FIRAuth.auth()?.currentUser{
-            self.senderId = currentUser.uid
-            if currentUser.isAnonymous == true
-            {
-                self.senderDisplayName = "anonymous"
-            }else{
-                //self.senderId = FIRAuth.auth()?.currentUser?.uid
-                //self.senderDisplayName = currentUser.senderDiaplayName
-            }
-        }
+        print("我爆了")
+        self.senderId = uuid
+//        if let currentUser = FIRAuth.auth()?.currentUser{
+//            
+//            self.senderId = currentUser.uid
+//            if currentUser.isAnonymous == true
+//            {
+//                self.senderDisplayName = "anonymous"
+//            }else{
+//                self.senderId = FIRAuth.auth()?.currentUser?.uid
+//                self.senderDisplayName = self.senderDisplayName
+//            }
+//        }
         observeMessages()
     }
     func observeUsers(id: String){
-        FIRDatabase.database().reference().child("users").child(id).observe(.value, with:{
+        var senderDisplayName = self.senderDisplayName
+        FIRDatabase.database().reference().child("Users").child(id).observe(.value, with:{
             snapshot in
             if let dict = snapshot.value as? [String:AnyObject]
             {
-                
                 print(dict)
-                //let NickName = dict["NickName"]as! String
-                self.setUpNickName()
+                print(senderDisplayName!)
+                senderDisplayName = (dict["Users"]as! String)
             }
-        }
-        )
+        })
     }
-    func setUpNickName(){
-        
-    }
+    
     func observeMessages() {
         messageRef.observe(FIRDataEventType.childAdded){(snapshot: FIRDataSnapshot) in
             if let dict = snapshot.value as?[String: AnyObject]{
                 let mediaType = dict["MediaType"] as!String
                 let senderId = dict["senderId"] as!String
                 let senderName = dict["senderName"] as!String
-
+                
                 self.observeUsers(id: senderId)
                 
                 switch mediaType{
@@ -107,21 +113,14 @@ class ChatViewController: JSQMessagesViewController {
         }
     }
     
-    override func didPressSend(_ button: UIButton!, withMessageText text: String!, senderId: String!, senderDisplayName: String!, date: Date!) {
+    override func didPressSend(_ button: UIButton!, withMessageText text: String, senderId: String, senderDisplayName: String, date: Date!) {
         print("已點傳送按鈕")
-        //print("\(text)")
-        //print(senderId)
-        //print(senderDisplayName)
-        
-        //messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, text: text))
-        //collectionView.reloadData()
-        //print(messages)
         
         let newMessage = messageRef.childByAutoId()
         let messageData = ["text":text, "senderId":senderId, "senderName":senderDisplayName, "MediaType":"TEXT"]
         newMessage.setValue(messageData)
+//        FIRDatabase.database().reference().child("rooms").child("\(self.targetRoomNum)").child("messages").childByAutoId().setValue(messageData)
         self.finishSendingMessage()
-        //isTyping = false
     }
     
     override func didPressAccessoryButton(_ sender: UIButton!) {
@@ -172,17 +171,17 @@ class ChatViewController: JSQMessagesViewController {
     override func collectionView(_ collectionView: JSQMessagesCollectionView!, avatarImageDataForItemAt indexPath: IndexPath!) -> JSQMessageAvatarImageDataSource! {
         return nil
     }
-  
+    
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         print ("訊息有幾則:\(messages.count)")
         return messages.count
     }
-
+    
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = super.collectionView(collectionView, cellForItemAt: indexPath)as! JSQMessagesCollectionViewCell
         return cell
     }
-
+    
     //video message的對話泡泡
     override func collectionView(_ collectionView: JSQMessagesCollectionView!, didTapMessageBubbleAt indexPath: IndexPath!) {
         print("didTapMessageBubbleAt indexPath:\(indexPath.item)")
@@ -209,7 +208,7 @@ class ChatViewController: JSQMessagesViewController {
             return NSAttributedString(string: senderDisplayName)
         }
     }
-        override func didReceiveMemoryWarning() {
+    override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
@@ -223,24 +222,28 @@ class ChatViewController: JSQMessagesViewController {
         }
         print(FIRAuth.auth()?.currentUser)
         //Create a main storyboard instance
-        let storyboard = UIStoryboard(name : "Main", bundle: nil)
+//        let storyboard = UIStoryboard(name : "Main", bundle: nil)
+//        
+//        //From main storyboard instantiate a View controller
+//        let LoginVC = storyboard.instantiateViewController(withIdentifier:"LoginVC")as!LoginViewController
+//        //Get the app delegate
+//        let appDelegate = UIApplication.shared.delegate as!AppDelegate
+//        
+//        //Set Login Conteoller as root view controller
+//        appDelegate.window?.rootViewController = LoginVC
         
-        //From main storyboard instantiate a View controller
-        let LoginVC = storyboard.instantiateViewController(withIdentifier:"LoginVC")as!LoginViewController
-        //Get the app delegate
-        let appDelegate = UIApplication.shared.delegate as!AppDelegate
-        
-        //Set Login Conteoller as root view controller
-        appDelegate.window?.rootViewController = LoginVC
+        self.performSegue(withIdentifier: "BackToRoom", sender: nil)
     }
     /*
-    // MARK: - Navigation
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
+     // MARK: - Navigation
+     // In a storyboard-based application, you will often want to do a little preparation before navigation
+     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+     // Get the new view controller using segue.destinationViewController.
+     // Pass the selected object to the new view controller.
+     }
+     */
+
+    
     
     func sendMedia(picture:UIImage?, video:NSURL?){
         print (picture!)
@@ -285,49 +288,7 @@ class ChatViewController: JSQMessagesViewController {
                 newMessage.setValue(messageData)
             }
         }
-        
     }
-    //indicate an user is typing
-//    override func textViewDidChange(_ textView: UITextView) {
-//        super.textViewDidChange(textView)
-//        // If the text is not empty, the user is typing
-//        isTyping = textView.text != ""
-//    }
-//    private lazy var userIsTypingRef: FIRDatabaseReference =
-//        self.channelRef!.child("typingIndicator").child(self.senderId) // 1
-//    private var localTyping = false // 2
-//    var isTyping: Bool {
-//        get {
-//            return localTyping
-//        }
-//        set {
-//            // 3
-//            localTyping = newValue
-//            userIsTypingRef.setValue(newValue)
-//        }
-//    }
-//    private func observeTyping() {
-//        let typingIndicatorRef = channelRef!.child("typingIndicator")
-//        userIsTypingRef = typingIndicatorRef.child(senderId)
-//        userIsTypingRef.onDisconnectRemoveValue()
-//        // 1
-//        usersTypingQuery.observe(.value) { (data: FIRDataSnapshot) in
-//            // 2 You're the only one typing, don't show the indicator
-//            if data.childrenCount == 1 && self.isTyping {
-//                return
-//            }
-//            
-//            // 3 Are there others typing?
-//            self.showTypingIndicator = data.childrenCount > 0
-//            self.scrollToBottom(animated: true)
-//        }
-//    }
-//    override func viewDidAppear(_ animated: Bool) {
-//        super.viewDidAppear(animated)
-//        observeTyping()
-//    }
-//    private lazy var usersTypingQuery: FIRDatabaseQuery =
-//        self.channelRef!.child("typingIndicator").queryOrderedByValue().queryEqual(toValue: true)
 }
 
 
@@ -337,13 +298,13 @@ extension ChatViewController: UIImagePickerControllerDelegate, UINavigationContr
         //get the image info 可能之後有GPS資訊
         print(info)
         if let picture = info[UIImagePickerControllerOriginalImage] as? UIImage{
-//            let photo = JSQPhotoMediaItem(image: picture)
-//            messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, media: photo))
+            //            let photo = JSQPhotoMediaItem(image: picture)
+            //            messages.append(JSQMessage(senderId: senderId, displayName: senderDisplayName, media: photo))
             sendMedia(picture:picture, video:nil)
         }
         if let video = info[UIImagePickerControllerMediaURL]as? NSURL{
-//            let videoItem = JSQVideoMediaItem(fileURL: video as URL!, isReadyToPlay: true)
-//            messages.append(JSQMessage(senderId:senderId, displayName: senderDisplayName, media:videoItem))
+            //            let videoItem = JSQVideoMediaItem(fileURL: video as URL!, isReadyToPlay: true)
+            //            messages.append(JSQMessage(senderId:senderId, displayName: senderDisplayName, media:videoItem))
             sendMedia(picture: nil, video:video)
         }
         self.dismiss(animated: true, completion: nil)

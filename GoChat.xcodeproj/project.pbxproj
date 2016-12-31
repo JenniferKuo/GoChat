@@ -65,7 +65,7 @@
 		79A940451DF4480C00BA0EDB /* Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Helper.swift; sourceTree = "<group>"; };
 		79A940471DF44E4B00BA0EDB /* GoChat.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GoChat.entitlements; sourceTree = "<group>"; };
 		79EED0F51E0932D8005CE68F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		C281C8E71E0BA47500446FCB /* MapViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapViewController.swift; sourceTree = "<group>"; };
+		C281C8E71E0BA47500446FCB /* MapViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MapViewController.swift; path = GoChat/MapViewController.swift; sourceTree = "<group>"; };
 		C2BAA7781E14125900F20698 /* profile.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = profile.jpg; path = GoChat/Images/profile.jpg; sourceTree = "<group>"; };
 		C2D1907C1E14D67D00B0E34C /* default-user-image.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "default-user-image.png"; sourceTree = "<group>"; };
 		D7D71F43EE50A672340D65DB /* Pods-GoChat.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GoChat.release.xcconfig"; path = "Pods/Target Support Files/Pods-GoChat/Pods-GoChat.release.xcconfig"; sourceTree = "<group>"; };
@@ -500,7 +500,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -544,7 +544,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";

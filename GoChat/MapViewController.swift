@@ -21,7 +21,7 @@ import FirebaseDatabase
 import FirebaseStorage
 import FirebaseAuth
 
-class MapViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate,CLLocationManagerDelegate {
+class MapViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate,CLLocationManagerDelegate, GMSMapViewDelegate {
     
     var mapView: GMSMapView!
     var subView: UIView!
@@ -145,31 +145,53 @@ class MapViewController: UIViewController, UIImagePickerControllerDelegate, UINa
         
         let imageUrl = info["UIImagePickerControllerReferenceURL"]
         let asset = PHAsset.fetchAssets(withALAssetURLs: [imageUrl as! URL], options: nil).firstObject! as PHAsset
-        let latitude = asset.location?.coordinate.latitude
-        let longitude = asset.location?.coordinate.longitude
-        
-        //print("latitude:", latitude)
-        //print("longitude:",longitude)
-        //print("Creation Date: " + String(describing: asset.creationDate))
-        
-        newImage = ResizeImage(image: image!, targetSize: CGSize(width: 120, height:120))
-        newImage = cropToBounds(image: newImage, width: 80, height: 80)
-        newImage = maskRoundedImage(image: newImage, radius: 10, borderWidth: 2)
-        let marker = GMSMarker()
+        if((asset.location) != nil){
+            let latitude = asset.location?.coordinate.latitude
+            let longitude = asset.location?.coordinate.longitude
+            
+            //print("latitude:", latitude)
+            //print("longitude:",longitude)
+            //print("Creation Date: " + String(describing: asset.creationDate))
+            
+            newImage = ResizeImage(image: image!, targetSize: CGSize(width: 120, height:120))
+            newImage = cropToBounds(image: newImage, width: 80, height: 80)
+            newImage = maskRoundedImage(image: newImage, radius: 5, borderWidth: 0)
+            let marker = GMSMarker()
+            
+            
+            marker.position = CLLocationCoordinate2DMake(latitude!, longitude!)
+            marker.map = mapView
+            marker.icon = newImage
+            
+            let camera = GMSCameraPosition.camera(withLatitude: latitude!, longitude: longitude!, zoom: 6)
+            mapView.animate(to: camera)
+            
+            picker.dismiss(animated: true, completion: nil)
 
-        
-        marker.position = CLLocationCoordinate2DMake(latitude!, longitude!)
-        marker.title = "New Photo"
-        marker.snippet = "Picture"
-        marker.map = mapView
-        marker.icon = newImage
-        
-        let camera = GMSCameraPosition.camera(withLatitude: latitude!, longitude: longitude!, zoom: 6)
-        mapView.animate(to: camera)
-        
-        
-        
-        picker.dismiss(animated: true, completion: nil)
+        }else{  // 如果照片沒有地理位置
+            print("沒有地理位置")
+            picker.dismiss(animated: true, completion: nil)
+            // 建立一個提示框
+            let alertController = UIAlertController(
+                title: "提示",
+                message: "照片沒有地理位置資訊，無法新增照片，請開啟GPS定位再進行拍照",
+                preferredStyle: .alert)
+            
+            // 建立[確認]按鈕
+            let okAction = UIAlertAction(
+                title: "確認",
+                style: .default,
+                handler: {
+                    (action: UIAlertAction!) -> Void in
+            })
+            alertController.addAction(okAction)
+            
+            // 顯示提示框
+            self.present(
+                alertController,
+                animated: true,
+                completion: nil)
+        }
     }
     
     func ResizeImage(image: UIImage, targetSize: CGSize) -> UIImage {
@@ -274,8 +296,6 @@ class MapViewController: UIViewController, UIImagePickerControllerDelegate, UINa
     
     func observeLocation(){
         
-        
-
         FIRDatabase.database().reference().child("mapuser").observe(FIRDataEventType.childAdded){
             (snapshot: FIRDataSnapshot) in
             if let dict = snapshot.value as? [String: AnyObject]{
@@ -313,6 +333,6 @@ class MapViewController: UIViewController, UIImagePickerControllerDelegate, UINa
             }
         }
     }
-    
+
 }
 
